@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Button, FlatList, StyleSheet } from 'react-native';
+import { View, Text, Button, FlatList, StyleSheet, Alert } from 'react-native';
 import { ref, onValue } from "firebase/database";
-import { db } from '../config/Config';
+import { auth, db } from '../config/Config';
+import { signOut } from 'firebase/auth';
 
 export default function Home({ navigation }: any) {
     const [mascotas, setmascotas] = useState([]);
@@ -15,29 +16,24 @@ export default function Home({ navigation }: any) {
         onValue(mascotasRef, (snapshot) => {
             const data = snapshot.val(); 
             if (data) {
-               
                 const listTemp = Object.keys(data).map((key) => ({
                     codigomascota: key, 
                     ...data[key], 
                 }));
-    
-                
                 const uniqueList = listTemp.filter((item, index, self) =>
                     index === self.findIndex((t) => t.codigomascota === item.codigomascota)
                 );
-    
-                
                 setmascotas(uniqueList);
-                console.log("Datos obtenidos: ", uniqueList); 
+                // utilice el log para verificar si los datos se estan obteniendo
+                //console.log("Datos obtenidos: ", uniqueList); 
             } else {
-                console.log("No se encontraron mascotas.");
+                //console.log("No se encontraron mascotas.");
                 setmascotas([]); 
             }
         }, (error) => {
             console.error("Error al leer datos: ", error); 
         });
     }
-    
     
     useEffect(() => {
         leerMascotas();
@@ -47,6 +43,15 @@ export default function Home({ navigation }: any) {
         navigation.navigate('Perfil');
     };
 
+    function cerrarSesion() {
+        signOut(auth).then(() => {
+          Alert.alert('Éxito', 'Has cerrado sesión correctamente.');
+          navigation.navigate('Login');
+        }).catch((error) => {
+          Alert.alert('Error', 'No se pudo cerrar sesión: ' + error.message);
+        });
+      }
+
     return (
         <View style={styles.container}>
             <Text style={styles.title}>Bienvenido al Home</Text>
@@ -54,9 +59,8 @@ export default function Home({ navigation }: any) {
             <View style={styles.buttonContainer}>
                 <Button title="Editar Perfil de Usuario" onPress={editarPerfil} />
             </View>
-
             <Button title="Agregar Mascota Atendida" onPress={agregarMascota} />
-
+            <Button title="Cerrar Sesión" onPress={cerrarSesion} color="#FF0000" />
             <Text style={styles.subtitle}>Mascotas Atendidas</Text>
             <FlatList
                 data={mascotas}
